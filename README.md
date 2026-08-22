@@ -1,214 +1,100 @@
-# Лабораторная работа - хеш-таблица
-## Содержание
-[Цели и задачи](#Цели)
 
-[Выстроение плана работы](#План)
+# Hash Table Analysis
 
-[Ход работы шаг за шагом](#Ход_работы)
+A C++ project focused on implementing and evaluating a hash table based on separate chaining. The project explores hash-function quality, key distribution, and lookup performance using statistical analysis and profiling tools.
 
-[Обсуждение результатов и выводы](#Выводы)
+## Table of Contents
 
-[Использование проекта](#Использование)
+- [Overview](#overview)
+- [Project Goals](#project-goals)
+- [Hash Function Analysis](#hash-function-analysis)
+- [Performance Evaluation](#performance-evaluation)
+- [Results](#results)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
 
-##  Использование
-    
-### 1. Список
-        
-list_init(list*, type) - инициализация списка, создание головы(head), 
-    
-list_destroy(list*) - очистка памяти после работы, 
-    
-list_insert(list*, type) - вставка нового элемента после узла (head), 
-    
-list_dump(list*) - распечатка информации о текущем содержимом списка.
-    
-### 2. Таблица
-    
-make_table(table_t*, char*, size_t , hash_ptr ) - на вход подаётся инициализированная таблица, указатель на готовый массив, возвращаемый функцией read_buffer(FILE* text, size_t amount*)(буферизует текст, делит его на слова, считает кол-во слов, записывает его в переменную amount), следующий параметр - amount(количество слов , которое должно помещаться в таблицу), затем хеш-функция, с помощью которой мы эту таблицу строим, возвращаемое значение - (enum) CORRECT(всё хорошо), INCORRECT(нет). 
-    
-table_init(table_t*, size_t)(какую таблицу инициализируем + на сколько элементов), 
-    
-table_destroy(table_t*) - очищаем память после работы,
-    
-table_dump(table_t*, FILE*) - распечатка данных таблицы для построения графика,
-    
-search(table_t* , char* , hash_ptr) - в какой таблице ищем, какое слово ищем, в соответствии с каким хешом(возвращает номер bucket при нахождении и -1 , если слова нет).
-    
-    
-Реализация функций: [буферизация](./src/read_buffer.cpp), [таблица](./src/hash.cpp), [список](./src/list_func.cpp)
+## Overview
 
-### 3. Сборка
+The hash table uses an array of buckets, with each bucket implemented as a singly linked list. This design allows collisions to be handled through separate chaining.
 
-Создание исполняемого файла:
-```bash
-make
+The project compares several hash functions and evaluates their impact on bucket distribution and lookup performance. It also uses profiling tools to investigate execution costs and potential optimization opportunities.
+
+## Project Goals
+
+- Implement a hash table using separate chaining.
+- Compare the distribution quality of different hash functions.
+- Evaluate collision rates and bucket occupancy.
+- Measure lookup performance under different workloads.
+- Explore performance profiling with Valgrind and Cachegrind.
+- Identify the trade-offs between hash-function complexity and distribution quality.
+
+## Hash Function Analysis
+
+The project evaluates the following hash functions:
+
+| Hash function | Purpose |
+|---|---|
+| `hash_zero` | Baseline used to illustrate poor distribution |
+| `hash_first` | Uses the first character of the key |
+| `hash_word` | Uses a word-based component of the key |
+| `hash_xor` | Uses XOR-based operations |
+| `hash_xor_reversed` | Applies XOR-based processing in reverse order |
+| `hash_rol` | Uses a rotate-left operation |
+| `hash_ror` | Uses a rotate-right operation |
+| `crc32` | Uses CRC-32-based hashing |
+
+The analysis focuses on how evenly keys are distributed across buckets. A good hash function should minimize clustering and reduce the average length of collision chains.
+
+### Distribution Visualizations
+
+The following plots illustrate the bucket distributions produced by the tested hash functions.
+
+| Hash function | Distribution |
+|---|---|
+| `hash_zero` | ![Zero hash distribution](images/graph_zero.png) |
+| `hash_first` | ![First-character hash distribution](images/graph_first.png) |
+| `hash_word` | ![Word-based hash distribution](images/graph_word.png) |
+| `hash_xor` | ![XOR hash distribution](images/graph_xor.png) |
+| `hash_xor_reversed` | ![Reversed XOR hash distribution](images/graph_xor_reversed.png) |
+| `hash_rol` | ![Rotate-left hash distribution](images/graph_rol.png) |
+| `hash_ror` | ![Rotate-right hash distribution](images/graph_ror.png) |
+| `crc32` | ![CRC-32 hash distribution](images/graph_crc32.png) |
+
+## Performance Evaluation
+
+The project evaluates lookup performance and uses profiling data to investigate the behavior of the implementation.
+
+The benchmark results include different lookup workloads, including unsuccessful searches. Cachegrind is used to collect information about simulated cache behavior and branch prediction.
+
+### Benchmark Results
+
+![Miss benchmark](images/bench_miss.png)
+
+![Benchmark without optimization](images/bench_no_optimize.png)
+
+## Results
+
+The experiments demonstrate that hash-function choice has a substantial effect on bucket distribution.
+
+- Simple functions may produce severe clustering when they use too little information from a key.
+- XOR-based functions can improve distribution, but their effectiveness depends on the input data.
+- Rotation-based functions can provide a more balanced distribution for the tested dataset.
+- CRC-32 provides a useful comparison point for distribution quality and computational cost.
+
+A more uniform distribution generally reduces collision-chain lengths and can improve lookup performance. However, distribution quality alone does not determine runtime: the cost of computing the hash and the memory-access pattern also matter.
+
+## Project Structure
+
+```text
+.
+├── include/       # Public headers
+├── src/           # Implementation
+├── csv/           # Experimental data
+├── images/        # Generated plots and benchmark charts
+├── cache_grind/   # Cachegrind profiling output
+├── Dump_inf/      # Graph-related output
+├── Makefile
+├── README.md
+├── REQUIREMENTS.md
+└── BUILDING.md
 ```
-
-Создание графика по исполняемому файлу:
-```bash
-make graph_plot
-```
-
-Создание benchmark:
-```bash
-make benchmark
-```
-
-Весь Makefile: [Makefile](Makefile)
-
-## План
-Данная работа строится в несколько этапов, каждый следующий из которых является логическим продолжением предыдущего.
-
-**Первый этап**: 
-
- построение хеш-таблицы, структуры, являющейся массивом односвязных динамических списков.
- Нужно это для удобства и наглядности работы. Затем эта таблица наполняется словами по правилу: в список с индексом hash(значение хеша слова, полученного с помощью некоторой исследуемой функции) помещается это слово. Источником слов является некий текст, взятый из интернета. 
-
-**Второй этап**: 
- после того, как данные были подготовлены, можно приступать к их анализу. Показатель пригодной к работе хеш-функции это равномерное частотное распределение: чем меньше слов приходится на один хеш - тем он лучше. Графики распределения для каждой функции будут строиться с помощью gnuplot.
-
-**Третий этап**: 
- на этом этапе грубый отбор функций кончается, можно подумать над более тонкими вопросами: например, как оптимизировать поиск слова в таблице. Перебор сведён к минимальному, построением удобной структуры данных, а также выбором лучшей(по параметру распределения) функции. Следующий шаг - оптимизации, связанные с особенностями архитектуры. Для понимания того, сколько ресурсов тратит каждая функция, будет использоваться valgrind, а именно cashegrind. По ходу работы будут построены benchmarks, на которые нужно будет ориентироваться при внедрении ассемблерных оптимизаций, а также intrinsics
-## Цели
-
-Построение хеш-таблицы; Анализ хеш-функций и нахождение лучшей среди них; Изучение и использование профиляторов; Оптимизация поиска слова в таблице.
-
-## Ход_работы
-
-### |
-После создания хеш-таблицы как структуры, её нужно наполнить данными. Сделано это путём буферизации текста первой части "Game of thrones". В таблицу было внесено около 2000 неповторяющихся слов.
-
-Хеш-таблица была построена, теперь к анализу, он будет опираться на равномерность распределения, которая будет оценена формульно: 
-
-Пусть $N$ — общее количество слов, $k$ — количество бакетов,  
-$y_i$ — количество слов в $i$-м бакете.
-
-Количество слов в одном непустом бакете при равномерном распределении, учитывая, что бакетов больше чем слов:
-
-$$
-E = 1
-$$
-
-Среднеквадратичное отклонение от равномерного распределения:
-
-$$
-\sigma =
-\sqrt{
-\frac{1}{k}
-\sum_{i = 0}^{k - 1}
-(y_i - E)^2
-}
-$$
-
-Относительное среднеквадратичное отклонение:
-
-$$
-\sigma_{rel} = \frac{\sigma}{E}
-$$
-
-Относительное отклонение в процентах:
-
-$$
-\sigma_{rel, percent} = \frac{\sigma}{E} \cdot 100\%%
-$$
-
-Чем меньше $\sigma$ и $\sigma_{rel}$, тем ближе распределение к равномерному.  
-Если $\sigma_{rel} = 0$ %, то все бакеты заполнены равномерно(либо 0, либо 1).
-
-## *hash_zero:*
-
-Вне зависимости от поданного слова - функция возвращает 0
-
-<img src="./images/graph_zero.png" alt="zero" width="1000" height="500">
-
-Нулевой хеш совершенно очевидно, не подходит, сделан он для того, чтобы показать крайний (самый худший) случай поиска по хешу (все слова имеют один хеш) $\sigma_{rel} = 1905$%
-
-
-## *hash_first:*
-
-Хеш возвращает ASCI код первого символа слова
-
-<img src="./images/graph_first.png" alt="first" width="1000" height="500">
-
-Как видно из графика, основное скопление слов произошло в районе hash = 100; Функция совершенно точно не подходит для быстрого поиска(наибольшее число слов в списке составляет 140, это чрезмерно много) $\sigma_{rel} = 358$%
-
-## *hash_word:*
-
-Хеш, возвращающий сумму ASCI кодов символов слова
-
-<img src="./images/graph_word.png" alt="word" width="1000" height="500">
-
-Ситуация уже лучше, но всё ещё распределение неравномерное, что хорошо видно из графика. Максимальное количество слов в списке доходит до 11, что едва ли можно назвать приемлемым для быстрого поиска. $\sigma_{rel} = 58$%
-
-
-## *hash_xor:*
-
-Хеш возвращает значение от последовательного применения xor к первому символу и остальным символам слова. 
-
-<img src="./images/graph_xor.png" alt="xor" width="1000" height="500">
-
-Распределение не является равномерным, максимальное количество слов в списке примерно 30, это не подходит под нашу задачу $\sigma_{rel} = 155$%
-
-
-## *hash_xor_reversed:*
-
-Хеш возвращает значение от последовательного применения xor к последнему символу и остальным символам слова.
-
-<img src="./images/graph_xor_reversed.png" alt="xor_reversed" width="1000" height="500">
-
-Ситуация аналогичная *(hash_xor)* $\sigma_{rel} = 156$%
-
-
-## *hash_rol:*
-
-Хеш возвращает значение, полученное последовательным циклическим сдвигом влево и применением xor к соответствующим величинам.
-
-<img src="./images/graph_rol.png" alt="rol" width="1000" height="500">
-
-Распределение довольно равномерное в большом диапазоне. Максимальное количество слов в списке равно 6. \$\sigma_{rel} = 22$%
-
-
-## *hash_ror:*
-
-Хеш аналогичен *hash_rol*, но циклическая перестановка вправо.
-
-<img src="./images/graph_ror.png" alt="ror" width="1000" height="500">
-
-Распределение равномерное до определённой степени равномерное в большом диапазоне, но максимальное количество слов уже 9(хуже , чем rol). $\sigma_{rel} = 39$%
-
-
-## *crc32*
-
-Хеш основан на циклических перестановках и последовательном применении xor к значению хеша
-
-<img src="./images/graph_crc32.png" alt="crc32" width="1000" height="500">
-
-Распределение является лучшим из всех представленных хеш-функций, оно равномерно в очень большом диапазоне. Максимальное количество слов в списке равно 3. $\sigma_{rel} = 13.3$%. Эту функцию мы и будем использовать в дальнейшей работе.
-
-
-### ||
-(полная информация о каждом бенчмарке: [Папка с данными cache_grind](./cache_grind))
-
-*Benchmark-промах:*
-<img src="./images/bench_miss.png" alt="miss" width="1000" height="500">
-
-Первый benchmark даже не включает в себя функцию поиска, связано это с тем, что она была вызвана всего один раз. В последующем анализе количество вызовов будет измеряться миллионами, чтобы анализировать её быстродействие стало возможным.
-
-
-*Benchmark для неоптимизированной версии:*
-<img src="./images/bench_no_optimize.png" alt="no_optimize" width="1000" height="500">
-
-Теперь количество вызовов search увеличено до 1000000, что является оптимальным числом, для последующего измерения быстродействия. 
-
-## Выводы
-
-## Использование
-
-*Чтобы клонировать репозиторий:*
-1. Перейдите в директорию , в которую хотите поместить проект
-2. Выполните клонирование:
-```bash
-git clone git@github.com:cockgosl/HASH_TABLE.git
-```
-3. Внимательно ознакомьтесь с [применением функций](#Применение)
-4. Можно приступать к работе
