@@ -55,7 +55,7 @@ int search(table_t *hash_table, char *word, hash_ptr hash_func) {
     return flag;
 }
 
-double table_dump(table_t *hash_table, size_t amount, FILE *output) {
+double table_dump(table_t *hash_table, FILE *output) {
     if (hash_table == NULL || output == NULL) {
         printf("something is wrong with the given data\n");
         return INCORRECT;

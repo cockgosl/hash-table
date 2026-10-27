@@ -2,3 +2,6 @@ build/
 bin/
 Dump_inf/
 txt/
+.cache/
+*.csv
+*.json

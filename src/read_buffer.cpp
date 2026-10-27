@@ -11,7 +11,7 @@ char *read_buffer(FILE *text, size_t *amount) {
     size_t size = statistic.st_size;
     ;
 
-    buffer = (char *)calloc(sizeof(char), size + 1);
+    buffer = (char *)calloc(size + 1, sizeof(char));
     assert(buffer);
 
     if (buffer) {
